@@ -1,0 +1,15 @@
+llm:
+  provider: groq
+  model: llama-3.1-8b-instant
+  temperature: 0.0
+  max_tokens: 800
+
+retrieval:
+  backend: chroma
+  top_k: 6
+  chunk_size: 700
+  chunk_overlap: 120
+  reranker: none
+
+logging:
+  path: logs/run.jsonl
