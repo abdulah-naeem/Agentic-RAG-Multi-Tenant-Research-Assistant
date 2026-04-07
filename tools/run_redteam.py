@@ -43,8 +43,7 @@ def main():
         prompt = a["prompt"]
 
         cmd = [sys.executable, "-m", "app.main", "--tenant", tenant, "--query", prompt, "--config", args.config]
-        env = os.environ.copy()
-# ensure telemetry is off in the subprocess env
+        # ensure telemetry is off in the subprocess env
         env = os.environ.copy()
         env.setdefault("GROQ_DISABLE_TELEMETRY", "1")
         env.setdefault("CHROMADB_ALLOW_TELEMETRY", "false")

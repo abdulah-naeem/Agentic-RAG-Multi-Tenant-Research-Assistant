@@ -199,11 +199,11 @@ def agent(base_dir: str, tenant_id: str, user_query: str, cfg: dict | None = Non
         mem_dir = os.path.join(base_dir, ".state", "memory", tenant_id)
         os.makedirs(mem_dir, exist_ok=True)
 
-        if getattr(memory, "kind", "buffer") == "buffer":
+        if memory.kind == "buffer":
             path = os.path.join(mem_dir, "buffer.jsonl")
             with open(path, "a", encoding="utf-8") as f:
                 f.write(json.dumps({"user": user_query, "assistant": out}) + "\n")
-        elif getattr(memory, "kind", "summary") == "summary":
+        elif memory.kind == "summary":
             path = os.path.join(mem_dir, "summary.txt")
             with open(path, "a", encoding="utf-8") as f:
                 f.write(f"User: {user_query}\nAssistant: {out}\n---\n")

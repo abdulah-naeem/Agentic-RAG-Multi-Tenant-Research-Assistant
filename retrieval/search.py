@@ -35,6 +35,10 @@ def policy_guard(hits: List[Hit], active_tenant: str) -> List[Hit] | dict:
     2. Masks PII in allowed documents.
     3. Returns a Refusal dict if no documents remain.
     """
+    # Normalise to base tenant (e.g. "U1_genomics" -> "U1") to match
+    # the base tenant stored in hit metadata during indexing.
+    active_tenant = active_tenant.split("_", 1)[0] if "_" in active_tenant else active_tenant
+
     allowed_hits: list[Hit] = []
 
     for h in hits:

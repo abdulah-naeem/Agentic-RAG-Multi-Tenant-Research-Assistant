@@ -49,7 +49,7 @@ def chat_repl(base_dir, tenant, cfg, memory: Memory):
             print("Exiting REPL.")
             break
         elif user_input.lower() == "/clear":
-            clear_memory.clear_tenant_memory(tenant)
+            clear_memory.clear_tenant_memory(tenant, base_dir=base_dir)
             continue
         elif user_input.lower().startswith("/mode"):
             mode = user_input.split()[-1].lower()

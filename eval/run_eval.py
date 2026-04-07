@@ -10,6 +10,26 @@ from typing import Dict, List, Tuple
 
 DOC_RE = re.compile(r"\(doc=([A-Za-z0-9_\-]+),")
 
+REFUSAL_INDICATORS = [
+    r"\bRefusal\b",
+    r"refusal template",
+    r"cannot be answered",
+    r"accessdenied",
+    r"access denied",
+    r"injectiondetected",
+    r"leakagerisk",
+    r"leakage",
+]
+
+
+def looks_like_refusal(text: str) -> bool:
+    """Check if output text looks like a refusal response."""
+    t = (text or "").lower()
+    for pat in REFUSAL_INDICATORS:
+        if re.search(pat, t, flags=re.IGNORECASE):
+            return True
+    return False
+
 
 def load_manifest(project_root: str) -> List[Dict[str, str]]:
     manifest_path = os.path.join(project_root, "data", "manifest.csv")
@@ -102,6 +122,7 @@ def evaluate(project_root: str, config_path: str) -> Dict[str, List[Dict]]:
             output = run_cli(project_root, tenant, q, config_path)
             cited = parse_cited_doc_ids(output)
             cited_present = len(cited) > 0
+            is_refusal = looks_like_refusal(output)
 
             allowed_ids = allowed_map.get(tenant, set())
             cited_all_allowed = all((c in allowed_ids) for c in cited) if cited else False
@@ -109,14 +130,24 @@ def evaluate(project_root: str, config_path: str) -> Dict[str, List[Dict]]:
             # Simple substring check for expected phrases
             text_ok = all((t.lower() in (output or "").lower()) for t in contains_terms) if contains_terms else True
 
+            # Determine pass/fail:
+            # - If question is expected to be allowed: must have valid citations and text match
+            # - If question is expected to be refused: output must look like a refusal
+            if expected_allowed:
+                passed = cited_present and cited_all_allowed and text_ok
+            else:
+                passed = is_refusal and text_ok
+
             per_tenant_results.append({
                 "tenant": tenant,
                 "q": q,
                 "expected_allowed": expected_allowed,
+                "is_refusal": is_refusal,
                 "cited_present": cited_present,
                 "cited_all_allowed": cited_all_allowed,
                 "cited_doc_ids": cited,
                 "text_ok": text_ok,
+                "passed": passed,
                 "output": output,
             })
 
@@ -137,12 +168,12 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    # Summary line
+    # Summary
     total = sum(len(v) for v in results.values())
-    ok_citations = sum(1 for v in results.values() for r in v if r.get("cited_present") and r.get("cited_all_allowed"))
-    print(f"Wrote {out_path} with {total} items. citation_ok={ok_citations}/{total}")
+    passed = sum(1 for v in results.values() for r in v if r.get("passed"))
+    failed = total - passed
+    print(f"Wrote {out_path} with {total} items. passed={passed}/{total}, failed={failed}")
 
 
 if __name__ == "__main__":
     main()
-
